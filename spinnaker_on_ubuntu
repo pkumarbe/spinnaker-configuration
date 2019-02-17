@@ -1,0 +1,23 @@
+Note- As of now spinnaker is not supported on CentOS. This configuration has been done with Ubuntu 18
+=======================================================================================================
+Source:- https://www.spinnaker.io/setup/install/
+###############
+curl -O https://raw.githubusercontent.com/spinnaker/halyard/master/install/debian/InstallHalyard.sh
+sudo bash InstallHalyard.sh
+hal
+hal -v
+hal admin
+hal config provider
+hal config provider kubernetes enable
+hal config provider docker-registry account add spinnakerdocker --address index.docker.io  --repositories pk1dockerhub/flask_image --username <docker username> --password
+* Provide password when prompt
+hal config provider kubernetes account add my-k8s-account  --docker-registries spinnakerdocker
+
+# By default spinnaker binds with 127.0.0.1:9000 if it requires to access form out side a Iptables Entry may help.
+
+sudo iptables -t nat -A PREROUTING -p tcp --dport 9000 -j DNAT --to-destination 127.0.0.1:9000
+
+#alternative way allows to public (without authentication mechanism enable)
+ echo "host: 0.0.0.0" | tee     ~/.hal/default/service-settings/gate.yml     ~/.hal/default/service-settings/deck.yml
+ sudo hal deploy apply
+ sudo hal deploy connect
