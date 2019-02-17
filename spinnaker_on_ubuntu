@@ -9,15 +9,32 @@ hal -v
 hal admin
 hal config provider
 hal config provider kubernetes enable
+# Choose a storage type
+hal config storage edit --type redis
 hal config provider docker-registry account add spinnakerdocker --address index.docker.io  --repositories pk1dockerhub/flask_image --username <docker username> --password
 * Provide password when prompt
 hal config provider kubernetes account add my-k8s-account  --docker-registries spinnakerdocker
+hal config provider docker-registry enable
+
+hal version list
+hal config version edit --version $VERSION
+# start installation with SUDO
+sudo hal deploy apply
 
 # By default spinnaker binds with 127.0.0.1:9000 if it requires to access form out side a Iptables Entry may help.
 
 sudo iptables -t nat -A PREROUTING -p tcp --dport 9000 -j DNAT --to-destination 127.0.0.1:9000
 
 #alternative way allows to public (without authentication mechanism enable)
- echo "host: 0.0.0.0" | tee     ~/.hal/default/service-settings/gate.yml     ~/.hal/default/service-settings/deck.yml
+echo "host: 0.0.0.0" | tee \
+    ~/.hal/default/service-settings/gate.yml \
+    ~/.hal/default/service-settings/deck.yml
+ hal config security ui edit --override-base-url http://192.168.1.138:9000
+  hal config security ui edit --override-base-url http://192.168.1.138:8084
  sudo hal deploy apply
- sudo hal deploy connect
+
+# The gate api by default listen to localhost:8084, which does not work properly if it access from outside. This can be fixed by modifing the Iptables.
+# which is not a great solution instead work around. This can be solved if the authentication mechanism enabled as per the documentaion.
+sudo sysctl -w net.ipv4.conf.all.route_localnet=1
+sudo iptables -t nat -A OUTPUT -m addrtype --src-type LOCAL --dst-type LOCAL -p tcp --dport 8084 -j DNAT --to-destination 192.168.1.138:8084
+sudo iptables -t nat -A POSTROUTING -m addrtype --src-type LOCAL --dst-type UNICAST -j MASQUERADE
